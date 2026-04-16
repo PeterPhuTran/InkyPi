@@ -99,6 +99,12 @@
 	const isImperial = units === "imperial";
 	const unit = isImperial ? "in" : "mm";
 	const threshold = isImperial ? 0.0035 : 0.09;
+    const tickFontSize = 15;
+    const axisFont = {
+      family: 'Jost',
+      size: tickFontSize
+    };
+    const maxTimeTicks = Math.min(8, labels.length);
 	
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
@@ -113,6 +119,7 @@
 
         ctx.save();
         ctx.textAlign = 'center';
+        ctx.font = `bold ${tickFontSize - 1}px Jost`;
 
         meta.data.forEach((bar, i) => {
           const rainAmount = rainData[i];
@@ -217,13 +224,12 @@
           x: {
             ticks: {
               autoSkip: true,
+              maxTicksLimit: maxTimeTicks,
               padding: 10,
               maxRotation: 0, // Prevent label rotation
               minRotation: 0, // Prevent label rotation
               color: "{{ plugin_settings.textColor }}",
-              font: {
-                family: 'Jost'
-              }
+              font: axisFont
             },
             grid: {
               tickLength: 0,
@@ -238,9 +244,7 @@
             ticks: {
               padding: 5,
               color: "{{ plugin_settings.textColor }}",
-              font: {
-                family: 'Jost'
-              },
+              font: axisFont,
               autoSkip: false,
               callback: function(value, index, values) {
                 if (index === values.length-1) return (units != "standard") ? maxTemp + "°" : maxTemp;
@@ -258,9 +262,7 @@
             ticks: {
               padding: 0,
               color: "{{ plugin_settings.textColor }}",
-              font: {
-                family: 'Jost'
-              },
+              font: axisFont,
               autoSkip: false,
               callback: function(value, index, values) {
                 if (index === values.length - 1) return "100%";
