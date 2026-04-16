@@ -18,6 +18,7 @@
 
 :root {
   --weather-detail-font-size: 15px;
+  --weather-current-detail-font-size: 22px;
   --weather-refresh-font-size: 13px;
 }
 
@@ -277,14 +278,14 @@
 }
 
 .min-max {
-  font-size: var(--weather-detail-font-size);
+  font-size: var(--weather-current-detail-font-size);
   text-align: center;
   position: relative;
   line-height: 140%;
 }
 
 .feels-like {
-  font-size: var(--weather-detail-font-size);
+  font-size: var(--weather-current-detail-font-size);
   text-align: center;
   position: relative;
   line-height: 140%;
