@@ -109,6 +109,10 @@
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
+    const tempRange = Math.max(maxTemp - minTemp, 1);
+    const tempPadding = Math.max(2, Math.ceil(tempRange * 0.15));
+    const chartMinTemp = minTemp - tempPadding;
+    const chartMaxTemp = maxTemp + tempPadding;
 	
     Chart.register({
       id: 'annotationRain',
@@ -188,7 +192,8 @@
           borderWidth: 2,
           pointRadius: 0, // Hide points
           fill: true, // Enable filling the area under the line
-          tension: 0.5
+          tension: 0.35,
+          cubicInterpolationMode: 'monotone'
         },
         {
           type: 'bar',
@@ -253,8 +258,8 @@
               }
             },
             grid: { display: false },
-            min: minTemp,
-            max: maxTemp,
+            min: chartMinTemp,
+            max: chartMaxTemp,
           },
           y1: {
             position: 'right',

@@ -19,6 +19,7 @@
 :root {
   --weather-detail-font-size: 15px;
   --weather-current-detail-font-size: 22px;
+  --weather-date-font-size: 22px;
   --weather-refresh-font-size: 13px;
 }
 
@@ -56,7 +57,7 @@
 }
 
 .current-date {
-  font-size: max(var(--weather-detail-font-size), min(30cqh, 6cqi));
+  font-size: var(--weather-date-font-size);
   text-align: center;
   align-content: end;
   width: 100%;
