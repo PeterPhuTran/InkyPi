@@ -2,26 +2,36 @@
 
 <img src="./docs/images/inky_clock.jpg" />
 
+## Fork Status
+This repository is a fork of [fatihak/InkyPi](https://github.com/fatihak/InkyPi).
+
+The current `staging` branch differs from `upstream/main` in a small, targeted way:
+
+- Weather UI typography has been increased for readability.
+- The weather chart now uses padded y-axis bounds and monotone interpolation so the temperature line stays within the chart area.
+- Python dependency versions in `install/requirements.txt` and `install/requirements-dev.txt` are pinned differently from upstream.
+
+If you are looking for the original project, community wiki, or upstream issue history, see the upstream repository linked above.
 
 ## About InkyPi 
 InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. Designed for simplicity and flexibility, it allows you to effortlessly display the content you care about, with a simple web interface that makes setup and configuration effortless.
 
 **Features**:
-- Natural paper-like aethetic: crisp, minimalist visuals that are easy on the eyes, with no glare or backlight
+- Natural paper-like aesthetic: crisp, minimalist visuals that are easy on the eyes, with no glare or backlight
 - Web Interface allows you to update and configure the display from any device on your network
-- Minimize distractions: no LEDS, noise, or notifications, just the content you care about
+- Minimize distractions: no LEDs, noise, or notifications, just the content you care about
 - Easy installation and configuration, perfect for beginners and makers alike
 - Open source project allowing you to modify, customize, and create your own plugins
 - Set up scheduled playlists to display different plugins at designated times
 
-**Plugins**:
+**Built-in plugins include**:
 
-- Image Upload: Upload and display any image from your browser
-- Daily Newspaper/Comic: Show daily comics and front pages of major newspapers from around the world
-- Clock: Customizable clock faces for displaying time
-- AI Image/Text: Generate images and dynamic text from prompts using OpenAI's models
-- Weather: Display current weather conditions and multi-day forecasts with a customizable layout
-- Calendar: Visualize your calendar from Google, Outlook, or Apple Calendar with customizable layouts
+- Image plugins: Image Upload, Image URL, Image Folder, and Image Album
+- Daily content plugins: Newspaper, Comic, APOD, Unsplash, and Wikipedia Picture of the Day
+- Information plugins: Weather, Calendar, RSS, Todo List, Countdown, and Year Progress
+- Utility plugins: Clock and Screenshot
+- GitHub plugins: contributions, stars, and sponsors views
+- AI plugins: AI Image and AI Text
 
 And additional plugins coming soon! For documentation on building custom plugins, see [Building InkyPi Plugins](./docs/building_plugins.md).
 
@@ -53,7 +63,7 @@ To install InkyPi, follow these steps:
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/fatihak/InkyPi.git
+    git clone https://github.com/PeterPhuTran/InkyPi.git
     ```
 2. Navigate to the project directory:
     ```bash
@@ -84,7 +94,7 @@ Note:
 - The installation script requires sudo privileges to install and run the service. We recommend starting with a fresh installation of Raspberry Pi OS to avoid potential conflicts with existing software or configurations.
 - The installation process will automatically enable the required SPI and I2C interfaces on your Raspberry Pi.
 
-For more details, including instructions on how to image your microSD with Raspberry Pi OS, refer to [installation.md](./docs/installation.md). You can also checkout [this YouTube tutorial](https://youtu.be/L5PvQj1vfC4).
+For more details, including instructions on how to image your microSD with Raspberry Pi OS, refer to [installation.md](./docs/installation.md). You can also check out [this YouTube tutorial](https://youtu.be/L5PvQj1vfC4).
 
 ## Update
 To update your InkyPi with the latest code changes, follow these steps:
@@ -100,10 +110,10 @@ To update your InkyPi with the latest code changes, follow these steps:
     ```bash
     sudo bash install/update.sh
     ```
-This process ensures that any new updates, including code changes and additional dependencies, are properly applied without requiring a full reinstallation.
+This process ensures that any new updates, including code changes and additional dependencies, are properly applied without requiring a full reinstallation. If you are following a non-default branch such as `staging`, switch to that branch before running `git pull`.
 
 ## Uninstall
-To install InkyPi, simply run the following command:
+To uninstall InkyPi, run the following command:
 
 ```bash
 sudo bash install/uninstall.sh
@@ -125,7 +135,7 @@ Waveshare offers a range of e-Paper displays, similar to the Inky screens from P
 
 This project has been tested with several Waveshare models. **Displays based on the IT8951 controller are not supported**, and **screens smaller than 4 inches are not recommended** due to limited resolution.
 
-If your display model has a corresponding driver in the link above, it’s likely to be compatible. When running the installation script, use the -W option to specify your display model (without the .py extension). The script will automatically fetch and install the correct driver.
+If your display model has a corresponding driver in the link above, it's likely to be compatible. When running the installation script, use the -W option to specify your display model (without the .py extension). The script will automatically fetch and install the correct driver.
 
 ## License
 
@@ -135,9 +145,9 @@ This project includes fonts and icons with separate licensing and attribution re
 
 ## Issues
 
-Check out the [troubleshooting guide](./docs/troubleshooting.md). If you're still having trouble, feel free to create an issue on the [GitHub Issues](https://github.com/fatihak/InkyPi/issues) page.
+Check out the [troubleshooting guide](./docs/troubleshooting.md). If you're still having trouble, feel free to create an issue on this fork's [GitHub Issues](https://github.com/PeterPhuTran/InkyPi/issues) page.
 
-If you're using a Pi Zero W, note that there are known issues during the installation process. See [Known Issues during Pi Zero W Installation](./docs/troubleshooting.md#known-issues-during-pi-zero-w-installation) section in the troubleshooting guide for additional details..
+If you're using a Pi Zero W, note that there are known issues during the installation process. See [Known Issues during Pi Zero W Installation](./docs/troubleshooting.md#known-issues-during-pi-zero-w-installation) section in the troubleshooting guide for additional details.
 
 ## Sponsoring
 
