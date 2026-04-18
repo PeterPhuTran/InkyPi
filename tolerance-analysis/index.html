@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tolerance Analysis Tool</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222535;
+    --border: #2e3148;
+    --accent: #5b8dee;
+    --accent2: #7c3aed;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --radius: 8px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .header-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Dimension table */
+  .dim-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .dim-table th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dim-table td { padding: 6px 4px; }
+
+  .dim-table input, .dim-table select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 5px 8px;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .dim-table input:focus, .dim-table select:focus { border-color: var(--accent); }
+  .dim-table input[type="text"] { font-family: inherit; }
+
+  .btn-remove {
+    background: none;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+  .btn-remove:hover { opacity: 1; }
+
+  .btn {
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 9px 18px;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-run {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    padding: 11px 28px;
+    font-size: 0.95rem;
+    width: 100%;
+    margin-top: 16px;
+  }
+  .btn-run:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .row-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  /* Spec limits */
+  .spec-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 0.75rem; color: var(--muted); }
+  .field-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field-input:focus { border-color: var(--accent); }
+
+  /* Results */
+  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+
+  .result-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .result-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .result-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .result-sub { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-yellow { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+
+  /* Sensitivity bar chart */
+  .sens-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 9px;
+    font-size: 0.83rem;
+  }
+  .sens-name { width: 120px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sens-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 10px; }
+  .sens-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .sens-pct { width: 46px; text-align: right; color: var(--muted); font-size: 0.78rem; }
+
+  /* Monte Carlo histogram */
+  #mc-canvas {
+    width: 100%;
+    height: 180px;
+    display: block;
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+
+  .section-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin: 18px 0 10px;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+    padding: 32px 0;
+  }
+
+  .cpk-gauge {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .mc-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .mc-stat {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .mc-stat-val { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mc-stat-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+  .separator { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+  select option { background: var(--surface2); }
+
+  .info-tip {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.65rem;
+    text-align: center;
+    line-height: 14px;
+    cursor: default;
+    position: relative;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">⚙</div>
+  <div>
+    <h1>Tolerance Analysis Tool</h1>
+    <div class="subtitle">Worst-Case · RSS · Monte Carlo · Cpk · Sensitivity</div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- LEFT: inputs -->
+  <div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Dimensions / Tolerances</div>
+
+      <table class="dim-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Nominal</th>
+            <th>±Tol</th>
+            <th>Dist</th>
+            <th>Sign</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="dim-body"></tbody>
+      </table>
+
+      <div class="row-actions">
+        <button class="btn btn-ghost" onclick="addDim()">+ Add Dimension</button>
+        <button class="btn btn-ghost" onclick="loadExample()">Load Example</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Specification Limits</div>
+      <div class="spec-row">
+        <div class="field-group">
+          <div class="field-label">Target / Nominal</div>
+          <input class="field-input" id="spec-target" type="number" placeholder="0.000" value="0" />
+        </div>
+        <div class="field-group">
+          <div class="field-label">Lower Spec (LSL)</div>
+          <input class="field-input" id="spec-lsl" type="number" placeholder="e.g. -0.5" value="-0.5" />
+        </div>
+        <div class="field-group">
+          <div class="field-label">Upper Spec (USL)</div>
+          <input class="field-input" id="spec-usl" type="number" placeholder="e.g. 0.5" value="0.5" />
+        </div>
+      </div>
+      <div class="field-group" style="margin-top:12px;">
+        <div class="field-label">Monte Carlo Iterations</div>
+        <select class="field-input" id="mc-iters">
+          <option value="10000">10,000</option>
+          <option value="50000" selected>50,000</option>
+          <option value="100000">100,000</option>
+          <option value="500000">500,000</option>
+        </select>
+      </div>
+      <button class="btn btn-run" onclick="runAnalysis()">▶  Run Analysis</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: results -->
+  <div>
+    <div class="card" id="results-panel">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span>Results</div>
+      <div class="empty-state" id="empty-msg">Configure dimensions and click Run Analysis.</div>
+      <div id="results-content" style="display:none;">
+
+        <div class="results-grid" id="summary-cards"></div>
+
+        <hr class="separator" />
+
+        <div class="section-title">Sensitivity Ranking (% of total variance)</div>
+        <div id="sensitivity-list"></div>
+
+        <hr class="separator" />
+
+        <div class="section-title">Monte Carlo Distribution</div>
+        <canvas id="mc-canvas"></canvas>
+        <div class="mc-stats" id="mc-stats"></div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let dims = [];
+let dimId = 0;
+
+function addDim(name='', nominal=0, tol=0.1, dist='normal', sign=1) {
+  const id = dimId++;
+  dims.push({ id, name, nominal, tol, dist, sign });
+  renderDims();
+}
+
+function removeDim(id) {
+  dims = dims.filter(d => d.id !== id);
+  renderDims();
+}
+
+function readDims() {
+  dims = dims.map(d => {
+    const row = document.getElementById('row-' + d.id);
+    if (!row) return d;
+    return {
+      id: d.id,
+      name:    row.querySelector('.d-name').value.trim() || ('Dim ' + (d.id + 1)),
+      nominal: parseFloat(row.querySelector('.d-nom').value) || 0,
+      tol:     Math.abs(parseFloat(row.querySelector('.d-tol').value)) || 0,
+      dist:    row.querySelector('.d-dist').value,
+      sign:    parseInt(row.querySelector('.d-sign').value),
+    };
+  });
+}
+
+function renderDims() {
+  const tbody = document.getElementById('dim-body');
+  tbody.innerHTML = '';
+  dims.forEach(d => {
+    const tr = document.createElement('tr');
+    tr.id = 'row-' + d.id;
+    tr.innerHTML = `
+      <td><input class="d-name" type="text" value="${escHtml(d.name)}" placeholder="Dim ${d.id+1}" /></td>
+      <td><input class="d-nom"  type="number" value="${d.nominal}" step="any" /></td>
+      <td><input class="d-tol"  type="number" value="${d.tol}" step="any" min="0" /></td>
+      <td>
+        <select class="d-dist">
+          <option value="normal"   ${d.dist==='normal'   ?'selected':''}>Normal</option>
+          <option value="uniform"  ${d.dist==='uniform'  ?'selected':''}>Uniform</option>
+          <option value="triangular" ${d.dist==='triangular'?'selected':''}>Triangular</option>
+        </select>
+      </td>
+      <td>
+        <select class="d-sign">
+          <option value="1"  ${d.sign===1 ?'selected':''}>+</option>
+          <option value="-1" ${d.sign===-1?'selected':''}>−</option>
+        </select>
+      </td>
+      <td><button class="btn-remove" onclick="removeDim(${d.id})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function loadExample() {
+  dims = [];
+  dimId = 0;
+  [
+    ['Shaft Diameter',   25.0, 0.05, 'normal',    1],
+    ['Housing Bore',     25.2, 0.06, 'normal',   -1],
+    ['Washer Thickness',  2.0, 0.03, 'uniform',   1],
+    ['Shim',              0.5, 0.02, 'triangular',1],
+    ['Spacer',            3.0, 0.04, 'normal',    1],
+  ].forEach(([n,nom,tol,dist,sign]) => addDim(n, nom, tol, dist, sign));
+  document.getElementById('spec-target').value = 55.7;
+  document.getElementById('spec-lsl').value    = 55.4;
+  document.getElementById('spec-usl').value    = 56.0;
+}
+
+// ─── Analysis ────────────────────────────────────────────────────────────────
+
+function runAnalysis() {
+  readDims();
+  if (dims.length === 0) { alert('Add at least one dimension.'); return; }
+
+  const lsl    = parseFloat(document.getElementById('spec-lsl').value);
+  const usl    = parseFloat(document.getElementById('spec-usl').value);
+  const target = parseFloat(document.getElementById('spec-target').value);
+  const iters  = parseInt(document.getElementById('mc-iters').value);
+
+  if (isNaN(lsl) || isNaN(usl) || lsl >= usl) { alert('LSL must be less than USL.'); return; }
+
+  // Worst-case
+  const nomSum  = dims.reduce((s,d) => s + d.sign * d.nominal, 0);
+  const wcPlus  = dims.reduce((s,d) => s + d.tol, 0);
+  const wcMin   = nomSum - wcPlus;
+  const wcMax   = nomSum + wcPlus;
+
+  // RSS
+  const rssVal  = Math.sqrt(dims.reduce((s,d) => s + d.tol ** 2, 0));
+  const rssMin  = nomSum - rssVal;
+  const rssMax  = nomSum + rssVal;
+
+  // Sensitivity (variance contribution)
+  const varContribs = dims.map(d => {
+    let v;
+    if (d.dist === 'normal')      v = (d.tol / 3) ** 2;
+    else if (d.dist === 'uniform') v = (d.tol ** 2) / 3;
+    else                           v = (d.tol ** 2) / 6;  // triangular
+    return { name: d.name, v };
+  });
+  const totalVar = varContribs.reduce((s,c) => s + c.v, 0);
+  const sensRanked = [...varContribs]
+    .map(c => ({ ...c, pct: totalVar > 0 ? c.v / totalVar * 100 : 0 }))
+    .sort((a,b) => b.pct - a.pct);
+
+  // Monte Carlo
+  const samples = monteCarlo(dims, iters);
+  const mcMean  = mean(samples);
+  const mcStd   = std(samples);
+  const defects = samples.filter(x => x < lsl || x > usl).length;
+  const dpm     = defects / iters * 1e6;
+  const cpk     = Math.min(
+    (usl - mcMean) / (3 * mcStd),
+    (mcMean - lsl) / (3 * mcStd)
+  );
+
+  // Render
+  document.getElementById('empty-msg').style.display    = 'none';
+  document.getElementById('results-content').style.display = 'block';
+
+  renderSummary({ nomSum, wcMin, wcMax, rssMin, rssMax, mcMean, mcStd, cpk, dpm, lsl, usl });
+  renderSensitivity(sensRanked);
+  renderHistogram(samples, lsl, usl, mcMean, mcStd);
+  renderMcStats(mcMean, mcStd, dpm, cpk);
+}
+
+function monteCarlo(dims, iters) {
+  const results = new Float64Array(iters);
+  for (let i = 0; i < iters; i++) {
+    let sum = 0;
+    for (const d of dims) {
+      sum += d.sign * (d.nominal + sample(d.dist, d.tol));
+    }
+    results[i] = sum;
+  }
+  return results;
+}
+
+function sample(dist, tol) {
+  if (dist === 'uniform') {
+    return (Math.random() * 2 - 1) * tol;
+  } else if (dist === 'triangular') {
+    // symmetric triangular via sum of two uniforms
+    return ((Math.random() + Math.random()) - 1) * tol;
+  } else {
+    // normal: Box-Muller, sigma = tol/3
+    const sigma = tol / 3;
+    const u1 = Math.random(), u2 = Math.random();
+    return sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+}
+
+function mean(arr) { return arr.reduce((s,v) => s+v, 0) / arr.length; }
+function std(arr) {
+  const m = mean(arr);
+  return Math.sqrt(arr.reduce((s,v) => s + (v-m)**2, 0) / arr.length);
+}
+
+// ─── Render helpers ───────────────────────────────────────────────────────────
+
+function fmt(v, d=4) { return isFinite(v) ? v.toFixed(d) : 'N/A'; }
+
+function cpkBadge(cpk) {
+  if (cpk >= 1.67) return ['badge-green', 'Excellent'];
+  if (cpk >= 1.33) return ['badge-green', 'Capable'];
+  if (cpk >= 1.00) return ['badge-yellow', 'Marginal'];
+  return ['badge-red', 'Not Capable'];
+}
+
+function renderSummary({ nomSum, wcMin, wcMax, rssMin, rssMax, mcMean, mcStd, cpk, dpm, lsl, usl }) {
+  const [cls, lbl] = cpkBadge(cpk);
+  const cards = document.getElementById('summary-cards');
+  cards.innerHTML = `
+    <div class="result-card">
+      <div class="result-label">Worst-Case Stack-Up</div>
+      <div class="result-value">${fmt(wcMin,4)} – ${fmt(wcMax,4)}</div>
+      <div class="result-sub">Nominal: ${fmt(nomSum,4)}</div>
+    </div>
+    <div class="result-card">
+      <div class="result-label">RSS Stack-Up</div>
+      <div class="result-value">${fmt(rssMin,4)} – ${fmt(rssMax,4)}</div>
+      <div class="result-sub">Statistical tolerance window</div>
+    </div>
+    <div class="result-card">
+      <div class="result-label">Monte Carlo Mean ± 3σ</div>
+      <div class="result-value">${fmt(mcMean,4)}</div>
+      <div class="result-sub">σ = ${fmt(mcStd,5)} &nbsp;|&nbsp; 3σ range: ${fmt(mcMean-3*mcStd,4)} – ${fmt(mcMean+3*mcStd,4)}</div>
+    </div>
+    <div class="result-card">
+      <div class="result-label">Process Capability (Cpk)</div>
+      <div class="result-value">${fmt(cpk,3)} <span class="badge ${cls}">${lbl}</span></div>
+      <div class="result-sub">DPM: ${Math.round(dpm).toLocaleString()} &nbsp;|&nbsp; Yield: ${(100 - dpm/1e4).toFixed(4)}%</div>
+    </div>
+  `;
+}
+
+function renderSensitivity(ranked) {
+  const el = document.getElementById('sensitivity-list');
+  const colors = ['#5b8dee','#7c3aed','#22c55e','#eab308','#ef4444','#06b6d4','#f97316'];
+  el.innerHTML = ranked.map((r, i) => `
+    <div class="sens-row">
+      <div class="sens-name" title="${escHtml(r.name)}">${escHtml(r.name)}</div>
+      <div class="sens-bar-wrap">
+        <div class="sens-bar" style="width:${r.pct.toFixed(1)}%; background:${colors[i % colors.length]};"></div>
+      </div>
+      <div class="sens-pct">${r.pct.toFixed(1)}%</div>
+    </div>
+  `).join('');
+}
+
+function renderHistogram(samples, lsl, usl, mcMean, mcStd) {
+  const canvas = document.getElementById('mc-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // hi-DPI
+  const W = canvas.clientWidth || 560;
+  const H = 180;
+  canvas.width  = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  const BINS = 60;
+  let mn = Infinity, mx = -Infinity;
+  for (const v of samples) { if (v < mn) mn = v; if (v > mx) mx = v; }
+  // Expand a little
+  mn = Math.min(mn, lsl - (usl-lsl)*0.1);
+  mx = Math.max(mx, usl + (usl-lsl)*0.1);
+
+  const binW = (mx - mn) / BINS;
+  const counts = new Int32Array(BINS);
+  for (const v of samples) {
+    const b = Math.min(BINS - 1, Math.floor((v - mn) / binW));
+    counts[b]++;
+  }
+  const maxCount = Math.max(...counts);
+
+  const PAD = { top: 16, right: 16, bottom: 28, left: 8 };
+  const cw = W - PAD.left - PAD.right;
+  const ch = H - PAD.top  - PAD.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Fill spec region
+  const specX1 = PAD.left + (lsl - mn) / (mx - mn) * cw;
+  const specX2 = PAD.left + (usl - mn) / (mx - mn) * cw;
+  ctx.fillStyle = 'rgba(34,197,94,0.07)';
+  ctx.fillRect(specX1, PAD.top, specX2 - specX1, ch);
+
+  // Bars
+  for (let i = 0; i < BINS; i++) {
+    const x = PAD.left + (i / BINS) * cw;
+    const bCenter = mn + (i + 0.5) * binW;
+    const barH = (counts[i] / maxCount) * ch;
+    const isOob = bCenter < lsl || bCenter > usl;
+    ctx.fillStyle = isOob ? 'rgba(239,68,68,0.7)' : 'rgba(91,141,238,0.75)';
+    ctx.fillRect(x + 1, PAD.top + ch - barH, cw / BINS - 2, barH);
+  }
+
+  // LSL / USL lines
+  function vLine(xVal, color, label) {
+    const px = PAD.left + (xVal - mn) / (mx - mn) * cw;
+    if (px < PAD.left || px > PAD.left + cw) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(px, PAD.top);
+    ctx.lineTo(px, PAD.top + ch);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color;
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, px, PAD.top + ch + 14);
+  }
+
+  vLine(lsl, '#ef4444', `LSL ${lsl}`);
+  vLine(usl, '#ef4444', `USL ${usl}`);
+
+  // Mean line
+  const meanPx = PAD.left + (mcMean - mn) / (mx - mn) * cw;
+  ctx.strokeStyle = '#22c55e';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(meanPx, PAD.top);
+  ctx.lineTo(meanPx, PAD.top + ch);
+  ctx.stroke();
+}
+
+function renderMcStats(mcMean, mcStd, dpm, cpk) {
+  const [cls, lbl] = cpkBadge(cpk);
+  document.getElementById('mc-stats').innerHTML = `
+    <div class="mc-stat">
+      <div class="mc-stat-val">${fmt(mcMean, 4)}</div>
+      <div class="mc-stat-lbl">Mean</div>
+    </div>
+    <div class="mc-stat">
+      <div class="mc-stat-val">${fmt(mcStd, 5)}</div>
+      <div class="mc-stat-lbl">Std Dev (σ)</div>
+    </div>
+    <div class="mc-stat">
+      <div class="mc-stat-val"><span class="badge ${cls}">${fmt(cpk, 3)}</span></div>
+      <div class="mc-stat-lbl">Cpk — ${lbl}</div>
+    </div>
+  `;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+loadExample();
+</script>
+</body>
+</html>

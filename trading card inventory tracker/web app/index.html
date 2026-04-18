@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Card Inventory Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy-block">
+        <p class="eyebrow">Collectibles Portfolio</p>
+        <h1>Track your card collection like a net worth dashboard.</h1>
+        <p class="hero-copy">
+          Add your graded cards, estimate market pricing, and monitor collection performance over time.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <p class="hero-kicker">Graded cards, live pricing, one clean view.</p>
+        <button id="refreshButton" class="primary-button" type="button">Refresh Prices</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel provider-panel">
+        <div class="panel-header">
+          <h2>Live Pricing Provider</h2>
+          <p>Uses PriceCharting API in the browser</p>
+        </div>
+        <form id="providerForm" class="provider-form">
+          <label class="full-width">
+            PriceCharting API Token
+            <input id="apiTokenInput" name="apiToken" type="password" placeholder="Enter your PriceCharting token">
+          </label>
+          <button class="secondary-button" type="submit">Save Token</button>
+          <button id="clearTokenButton" class="ghost-button" type="button">Clear Token</button>
+        </form>
+        <p id="providerStatus" class="provider-status">
+          Live pricing is off until you save an API token.
+        </p>
+      </section>
+
+      <section class="panel metrics-panel">
+        <h2>Portfolio Snapshot</h2>
+        <div class="metrics-grid">
+          <article class="metric-card">
+            <span>Total Value</span>
+            <strong id="totalValue">$0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Cost Basis</span>
+            <strong id="costBasis">$0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Unrealized Gain</span>
+            <strong id="totalGain">$0</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Collection Value Over Time</h2>
+            <p>Portfolio snapshots shown across selectable time windows</p>
+          </div>
+          <div class="range-switcher" role="tablist" aria-label="Chart range">
+            <button class="range-button active" data-range="day" type="button">Day</button>
+            <button class="range-button" data-range="week" type="button">Week</button>
+            <button class="range-button" data-range="month" type="button">Month</button>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-metrics">
+            <strong id="chartCurrentValue">$0</strong>
+            <span id="chartRangeLabel">Last 24 hours</span>
+          </div>
+          <svg id="historyChart" class="history-chart" viewBox="0 0 960 280" preserveAspectRatio="none" aria-label="Collection value history chart">
+            <g id="chartGrid"></g>
+            <path id="chartArea" class="chart-area"></path>
+            <path id="chartLine" class="chart-line"></path>
+            <g id="chartPoints"></g>
+          </svg>
+          <div id="chartEmptyState" class="chart-empty-state" hidden>
+            Add or refresh cards to generate historical value data.
+          </div>
+          <div id="chartAxisLabels" class="chart-axis-labels"></div>
+        </div>
+      </section>
+
+      <section class="panel form-panel">
+        <h2>Add Card</h2>
+        <form id="cardForm" class="card-form">
+          <label>
+            Card Title
+            <input name="title" type="text" placeholder="Charizard Holo" required>
+          </label>
+          <label>
+            Franchise
+            <input name="franchise" type="text" placeholder="Pokemon">
+          </label>
+          <label>
+            Set Name
+            <input name="setName" type="text" placeholder="Base Set" required>
+          </label>
+          <label>
+            Year
+            <input name="year" type="number" placeholder="1999" required>
+          </label>
+          <label>
+            Card Number
+            <input name="cardNumber" type="text" placeholder="4/102">
+          </label>
+          <label>
+            PSA Grade
+            <select name="grade" required>
+              <option>PSA 1</option>
+              <option>PSA 2</option>
+              <option>PSA 3</option>
+              <option>PSA 4</option>
+              <option>PSA 5</option>
+              <option>PSA 6</option>
+              <option>PSA 7</option>
+              <option>PSA 8</option>
+              <option selected>PSA 9</option>
+              <option>PSA 10</option>
+            </select>
+          </label>
+          <label>
+            Purchase Price
+            <input name="purchasePrice" type="number" step="0.01" placeholder="1200" required>
+          </label>
+          <label>
+            Quantity
+            <input name="quantity" type="number" min="1" value="1" required>
+          </label>
+          <label class="full-width">
+            Notes
+            <textarea name="notes" rows="3" placeholder="Any grading or provenance notes"></textarea>
+          </label>
+          <button class="primary-button full-width" type="submit">Add to Portfolio</button>
+        </form>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="panel-header">
+          <h2>Holdings</h2>
+          <p id="lastUpdated">No refresh yet</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Card</th>
+                <th>Grade</th>
+                <th>Qty</th>
+                <th>Cost Basis</th>
+                <th>Market Value</th>
+                <th>Gain/Loss</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="holdingsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel history-panel">
+        <div class="panel-header">
+          <h2>Collection History</h2>
+          <p>Latest portfolio snapshots stored in browser</p>
+        </div>
+        <ul id="historyList" class="history-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
