@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the InkyPi WiFi watchdog periodically
+
+[Timer]
+# First check shortly after boot, then every 2 minutes thereafter.
+OnBootSec=60
+OnUnitActiveSec=120
+Unit=inkypi-wifi-watchdog.service
+
+[Install]
+WantedBy=timers.target

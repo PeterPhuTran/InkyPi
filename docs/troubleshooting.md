@@ -1,5 +1,38 @@
 # Troubleshooting
 
+## WiFi drops and won't reconnect until power cycle
+
+The Raspberry Pi WiFi adapter can drop its connection (most often because of WiFi
+power saving) and NetworkManager does not always bring it back on its own. To handle
+this, the installer sets up:
+
+- A NetworkManager drop-in (`/etc/NetworkManager/conf.d/inkypi-wifi-powersave-off.conf`)
+  that disables WiFi power saving.
+- A `inkypi-wifi-watchdog` script run every ~2 minutes by a systemd timer. It pings the
+  default gateway and, if unreachable, escalates through reconnect attempts (reconnect
+  device → toggle radio → restart NetworkManager → bounce the interface).
+
+Check the watchdog timer is active:
+```bash
+systemctl status inkypi-wifi-watchdog.timer
+systemctl list-timers | grep wifi-watchdog
+```
+
+View what the watchdog has been doing:
+```bash
+journalctl -u inkypi-wifi-watchdog -f
+```
+
+Confirm power saving is off (should print `Power save: off`):
+```bash
+iw dev wlan0 get power_save
+```
+
+Force a manual run of the watchdog:
+```bash
+sudo systemctl start inkypi-wifi-watchdog.service
+```
+
 ## InkyPi Service not running
 
 Check the status of the service:

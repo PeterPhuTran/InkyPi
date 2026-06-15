@@ -95,6 +95,21 @@ remove_files() {
   fi
 }
 
+remove_wifi_watchdog() {
+  echo "Removing WiFi watchdog"
+  if [ -f /etc/systemd/system/inkypi-wifi-watchdog.timer ]; then
+    /usr/bin/systemctl disable --now inkypi-wifi-watchdog.timer > /dev/null 2>&1
+    rm -f /etc/systemd/system/inkypi-wifi-watchdog.timer
+    rm -f /etc/systemd/system/inkypi-wifi-watchdog.service
+    rm -f "$BINPATH/inkypi-wifi-watchdog"
+    rm -f /etc/NetworkManager/conf.d/inkypi-wifi-powersave-off.conf
+    /usr/bin/systemctl daemon-reload
+    echo_success "\tWiFi watchdog removed."
+  else
+    echo_success "\tWiFi watchdog not installed. Nothing to remove."
+  fi
+}
+
 confirm_uninstall() {
   echo -e "${bold}Are you sure you want to uninstall $APPNAME? (y/N): ${normal}"
   read -r confirmation
@@ -108,6 +123,7 @@ check_permissions
 confirm_uninstall
 stop_service
 disable_service
+remove_wifi_watchdog
 remove_files
 
 echo_success "Uninstallation complete."
