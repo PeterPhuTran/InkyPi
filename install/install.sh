@@ -205,6 +205,33 @@ setup_earlyoom_service() {
   sudo systemctl enable --now earlyoom
 }
 
+setup_wifi_watchdog_service() {
+  # Keeps WiFi alive: disables power saving and installs a systemd timer that
+  # reconnects the connection if it drops. NetworkManager only (Bookworm+).
+  if ! command -v nmcli > /dev/null 2>&1; then
+    echo "NetworkManager (nmcli) not found - skipping WiFi watchdog setup."
+    return
+  fi
+
+  echo "Setting up WiFi watchdog (auto-reconnect) service."
+
+  # Disable WiFi power saving persistently.
+  cp "$SCRIPT_DIR/config_base/inkypi-wifi-powersave-off.conf" \
+    /etc/NetworkManager/conf.d/inkypi-wifi-powersave-off.conf
+  echo_success "\tInstalled NetworkManager WiFi power-save override."
+
+  # Install the watchdog script.
+  cp "$SCRIPT_DIR/wifi-watchdog.sh" "$BINPATH/inkypi-wifi-watchdog"
+  chmod +x "$BINPATH/inkypi-wifi-watchdog"
+
+  # Install and enable the systemd service + timer.
+  cp "$SCRIPT_DIR/inkypi-wifi-watchdog.service" /etc/systemd/system/
+  cp "$SCRIPT_DIR/inkypi-wifi-watchdog.timer" /etc/systemd/system/
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now inkypi-wifi-watchdog.timer
+  echo_success "\tWiFi watchdog timer enabled."
+}
+
 create_venv(){
   echo "Creating python virtual environment. "
   python3 -m venv "$VENV_PATH"
@@ -373,6 +400,7 @@ else
   echo "OS version is not Bookworm - skipping zramswap setup."
 fi
 setup_earlyoom_service
+setup_wifi_watchdog_service
 install_src
 install_cli
 create_venv

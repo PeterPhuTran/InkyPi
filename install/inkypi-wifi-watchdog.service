@@ -1,0 +1,10 @@
+[Unit]
+Description=InkyPi WiFi watchdog (reconnect dropped WiFi)
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/inkypi-wifi-watchdog
+StandardOutput=journal
+StandardError=journal
