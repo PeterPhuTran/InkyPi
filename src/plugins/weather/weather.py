@@ -52,7 +52,7 @@ WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lo
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
 
-OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
 OPEN_METEO_UNIT_PARAMS = {
     "standard": "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",  # temperature is converted to Kelvin later
@@ -167,7 +167,7 @@ class Weather(BasePlugin):
     def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat):
         current = weather_data.get("current", {})
         daily = weather_data.get('daily', {})
-        dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
+        dt = datetime.fromisoformat(current.get('time')) if current.get('time') else datetime.now(tz)
         weather_code = current.get("weather_code", 0)
         is_day = current.get("is_day", 1)
         current_icon = self.map_weather_code_to_icon(weather_code, is_day)
@@ -185,6 +185,14 @@ class Weather(BasePlugin):
         }
 
         data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), units, tz, is_day, lat)
+
+        # Peak/low temperature times and rain chance/start for today and tomorrow
+        hourly_raw = weather_data.get('hourly', {})
+        for day_index in (0, 1):
+            if day_index < len(data['forecast']):
+                data['forecast'][day_index].update(
+                    self.parse_open_meteo_day_details(
+                        hourly_raw, daily, day_index, current.get('time'), temperature_conversion))
         data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, units, tz, time_format)
         
         data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units, tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
@@ -341,7 +349,7 @@ class Weather(BasePlugin):
         forecast = []
 
         for i in range(0, len(times)): 
-            dt = datetime.fromisoformat(times[i]).replace(tzinfo=timezone.utc).astimezone(tz)
+            dt = datetime.fromisoformat(times[i])
             day_label = dt.strftime("%a")
 
             code = weather_codes[i] if i < len(weather_codes) else 0
@@ -349,7 +357,7 @@ class Weather(BasePlugin):
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
-            target_date: date = dt.date() + timedelta(days=1)
+            target_date: date = dt.date()
 
             try:
                 phase_age = moon.phase(target_date)
@@ -411,6 +419,79 @@ class Weather(BasePlugin):
             }
             hourly.append(hour_forecast)
         return hourly
+
+    def parse_open_meteo_day_details(self, hourly_data, daily_data, day_index, now_str, temperature_offset=0.):
+        """Derive peak/low temperature times and rain timing for one local calendar day.
+
+        Open-Meteo is queried with timezone=auto, so every timestamp it returns is a NAIVE
+        local wall-clock string for the forecast location. They are used verbatim: calling
+        astimezone() on them would reinterpret them in the host's system timezone, which on
+        this device is not the display's configured timezone, shifting every time by hours.
+        """
+        rain_prob_threshold = 30      # percent
+        rain_amount_threshold = 0.001 # inches or mm - any measurable amount
+        details = {
+            "peak_time": None, "peak_temp": None,
+            "low_time": None, "low_temp": None,
+            "rain_chance": None, "rain_start": None, "raining_now": False,
+        }
+        try:
+            dates = daily_data.get("time") or []
+            if day_index >= len(dates):
+                return details
+            target_date = datetime.fromisoformat(str(dates[day_index])).date()
+
+            times = hourly_data.get("time") or []
+            temps = hourly_data.get("temperature_2m") or []
+            probs = hourly_data.get("precipitation_probability") or []
+            amounts = hourly_data.get("precipitation") or []
+
+            now_dt = None
+            if now_str:
+                try:
+                    now_dt = datetime.fromisoformat(str(now_str))
+                except (ValueError, TypeError):
+                    now_dt = None
+
+            day_hours = []
+            for i, time_str in enumerate(times):
+                try:
+                    dt_hour = datetime.fromisoformat(str(time_str))
+                except (ValueError, TypeError):
+                    continue
+                if dt_hour.date() == target_date:
+                    day_hours.append((i, dt_hour))
+
+            temp_points = [(dt_hour, temps[i] + temperature_offset) for i, dt_hour in day_hours
+                           if i < len(temps) and temps[i] is not None]
+            if temp_points:
+                peak = max(temp_points, key=lambda point: point[1])
+                low = min(temp_points, key=lambda point: point[1])
+                details["peak_time"] = peak[0].strftime("%H:%M")
+                details["peak_temp"] = int(round(peak[1]))
+                details["low_time"] = low[0].strftime("%H:%M")
+                details["low_temp"] = int(round(low[1]))
+
+            prob_max = daily_data.get("precipitation_probability_max") or []
+            if day_index < len(prob_max) and prob_max[day_index] is not None:
+                details["rain_chance"] = int(prob_max[day_index])
+
+            is_today = now_dt is not None and now_dt.date() == target_date
+            for i, dt_hour in day_hours:
+                prob = probs[i] if i < len(probs) and probs[i] is not None else 0
+                amount = amounts[i] if i < len(amounts) and amounts[i] is not None else 0
+                if prob < rain_prob_threshold and amount <= rain_amount_threshold:
+                    continue
+                if is_today and dt_hour.hour < now_dt.hour:
+                    continue   # that rain window has already passed
+                if is_today and dt_hour.hour == now_dt.hour:
+                    details["raining_now"] = True
+                    break
+                details["rain_start"] = dt_hour.strftime("%H:%M")
+                break
+        except Exception as exc:
+            logger.error(f"Failed to derive day details for index {day_index}: {exc}")
+        return details
 
     def parse_open_meteo_hourly(self, hourly_data, units, tz, time_format, sunrises, sunsets):
         hourly = []
